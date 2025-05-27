@@ -1,0 +1,321 @@
+name: 🚀 Multi-Platform Build & Release
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # 수동 실행 가능
+    inputs:
+      create_release:
+        description: 'Create GitHub Release'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  APP_VERSION: "1.4.7"
+
+jobs:
+  # Windows 빌드 작업
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: 🦀 Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: x86_64-pc-windows-msvc
+
+    - name: 🛠️ Install Windows Build Dependencies
+      run: |
+        # Visual Studio Build Tools (간단한 방법)
+        choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools" -y
+        
+        # WebView2 런타임 (Tauri 필수)
+        choco install webview2 -y
+
+    - name: 📦 Cache Dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          src-tauri/target
+          node_modules
+        key: ${{ runner.os }}-deps-${{ hashFiles('**/Cargo.lock', '**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-deps-
+
+    - name: 📦 Install NPM Dependencies
+      run: npm ci
+
+    - name: 🏗️ Build Frontend
+      run: npm run build
+
+    - name: 🚀 Build Tauri App (Windows)
+      run: npm run tauri:build
+      env:
+        RUSTFLAGS: "-C target-feature=+crt-static"
+
+    - name: 📊 Build Results
+      run: |
+        echo "=== Windows Build Results ==="
+        if (Test-Path "src-tauri/target/release/bundle/msi") {
+          Get-ChildItem "src-tauri/target/release/bundle/msi" | ForEach-Object {
+            Write-Host "✅ MSI: $($_.Name) ($([math]::Round($_.Length/1MB, 2)) MB)"
+          }
+        } else {
+          Write-Host "❌ No MSI files found"
+        }
+
+    - name: 📤 Upload Windows MSI
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-msi
+        path: src-tauri/target/release/bundle/msi/*.msi
+        retention-days: 30
+
+  # macOS 빌드 작업
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: 🦀 Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-apple-darwin
+
+    - name: 🛠️ Install macOS Dependencies
+      run: |
+        # create-dmg 설치 (로컬에서 성공한 방법)
+        brew install create-dmg
+
+    - name: 📦 Cache Dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          src-tauri/target
+          node_modules
+        key: ${{ runner.os }}-deps-${{ hashFiles('**/Cargo.lock', '**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-deps-
+
+    - name: 📦 Install NPM Dependencies
+      run: npm ci
+
+    - name: 🏗️ Build Frontend
+      run: npm run build
+
+    - name: 🚀 Build Tauri App (macOS)
+      run: npm run tauri:build
+
+    - name: 🔧 Fix DMG with create-dmg (로컬 성공 방법 적용)
+      run: |
+        echo "🔧 create-dmg로 정상적인 DMG 생성 중..."
+        
+        cd src-tauri/target/release/bundle/macos
+        
+        # 앱 번들 확인
+        if [ -d "Image overlay tool.app" ]; then
+          echo "✅ 앱 번들 발견: $(du -sh 'Image overlay tool.app' | awk '{print $1}')"
+          
+          # create-dmg로 새로운 DMG 생성
+          create-dmg \
+            --volname "Image overlay tool" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "Image overlay tool.app" 200 190 \
+            --app-drop-link 600 185 \
+            "../dmg/Image_overlay_tool_v${{ env.APP_VERSION }}_fixed.dmg" \
+            "Image overlay tool.app"
+          
+          echo "✅ create-dmg로 DMG 생성 완료"
+        else
+          echo "❌ 앱 번들을 찾을 수 없습니다"
+          exit 1
+        fi
+
+    - name: 📊 Build Results
+      run: |
+        echo "=== macOS Build Results ==="
+        
+        # 앱 번들 정보
+        if [ -d "src-tauri/target/release/bundle/macos/Image overlay tool.app" ]; then
+          APP_SIZE=$(du -sh "src-tauri/target/release/bundle/macos/Image overlay tool.app" | awk '{print $1}')
+          echo "✅ App Bundle: Image overlay tool.app ($APP_SIZE)"
+        fi
+        
+        # DMG 파일들 정보
+        if [ -d "src-tauri/target/release/bundle/dmg" ]; then
+          echo "📦 DMG Files:"
+          ls -lah src-tauri/target/release/bundle/dmg/*.dmg | while read line; do
+            SIZE=$(echo $line | awk '{print $5}')
+            NAME=$(basename "$(echo $line | awk '{print $9}')")
+            echo "   📀 $NAME ($SIZE)"
+          done
+        fi
+
+    - name: 🧪 Verify Fixed DMG
+      run: |
+        echo "🧪 생성된 DMG 검증 중..."
+        
+        DMG_PATH="src-tauri/target/release/bundle/dmg/Image_overlay_tool_v${{ env.APP_VERSION }}_fixed.dmg"
+        
+        if [ -f "$DMG_PATH" ]; then
+          echo "✅ 고정된 DMG 발견: $(ls -lah "$DMG_PATH" | awk '{print $5}')"
+          
+          # DMG 마운트 테스트
+          MOUNT_POINT=$(hdiutil attach "$DMG_PATH" 2>/dev/null | grep "/Volumes" | awk '{print $3}')
+          
+          if [ -n "$MOUNT_POINT" ]; then
+            echo "✅ DMG 마운트 성공: $MOUNT_POINT"
+            
+            if [ -d "$MOUNT_POINT/Image overlay tool.app" ]; then
+              echo "✅ 앱 번들이 DMG에 포함되어 있습니다!"
+            else
+              echo "❌ 앱 번들이 DMG에 없습니다"
+            fi
+            
+            hdiutil detach "$MOUNT_POINT" 2>/dev/null
+          else
+            echo "❌ DMG 마운트 실패"
+          fi
+        else
+          echo "❌ 고정된 DMG를 찾을 수 없습니다"
+        fi
+
+    - name: 📤 Upload macOS DMG
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-dmg
+        path: src-tauri/target/release/bundle/dmg/*.dmg
+        retention-days: 30
+
+  # 빌드 요약 및 릴리즈 생성
+  finalize:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: 📥 Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: 📊 Build Summary
+      run: |
+        echo "# 🚀 Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📦 Generated Files" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Windows 파일들
+        if [ -d "artifacts/windows-msi" ]; then
+          echo "### 🪟 Windows" >> $GITHUB_STEP_SUMMARY
+          ls -lah artifacts/windows-msi/ | grep -E "\.msi$" | while read line; do
+            SIZE=$(echo $line | awk '{print $5}')
+            NAME=$(echo $line | awk '{print $9}')
+            echo "- ✅ $NAME ($SIZE)" >> $GITHUB_STEP_SUMMARY
+          done
+        else
+          echo "- ❌ Windows build failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # macOS 파일들
+        if [ -d "artifacts/macos-dmg" ]; then
+          echo "### 🍎 macOS" >> $GITHUB_STEP_SUMMARY
+          ls -lah artifacts/macos-dmg/ | grep -E "\.dmg$" | while read line; do
+            SIZE=$(echo $line | awk '{print $5}')
+            NAME=$(echo $line | awk '{print $9}')
+            echo "- ✅ $NAME ($SIZE)" >> $GITHUB_STEP_SUMMARY
+          done
+        else
+          echo "- ❌ macOS build failed" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: 🎉 Create GitHub Release
+      if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.create_release)
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ env.APP_VERSION }}-build${{ github.run_number }}
+        name: "🖼️ Image Overlay Tool v${{ env.APP_VERSION }} (Build ${{ github.run_number }})"
+        body: |
+          # 🖼️ Image Overlay Tool v${{ env.APP_VERSION }}
+          
+          **개발자:** Eric (eon232@gmail.com)  
+          **빌드 번호:** ${{ github.run_number }}  
+          **커밋:** ${{ github.sha }}
+          
+          ## ✨ 주요 기능
+          - 🖼️ 이미지 오버레이 도구
+          - 🇰🇷 완벽한 한글 지원
+          - 🎨 사용하기 쉬운 인터페이스
+          
+          ## 📥 다운로드
+          
+          ### 🪟 Windows
+          - `.msi` 파일을 다운로드하여 설치
+          - Windows 10/11 지원
+          
+          ### 🍎 macOS  
+          - `.dmg` 파일을 다운로드하여 설치
+          - macOS 10.13+ 지원
+          - Intel & Apple Silicon 호환
+          
+          ## 🔧 설치 방법
+          
+          **Windows:**
+          1. `.msi` 파일 다운로드
+          2. 파일 실행하여 설치
+          
+          **macOS:**
+          1. `.dmg` 파일 다운로드
+          2. DMG 마운트 후 앱을 Applications 폴더로 드래그
+          
+          ---
+          
+          💡 **문제 발생 시:** [GitHub Issues](https://github.com/${{ github.repository }}/issues)에서 문의해주세요.
+        files: |
+          artifacts/windows-msi/*
+          artifacts/macos-dmg/*
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 📋 Next Steps
+      if: always()
+      run: |
+        echo "## 🎯 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "1. 📥 **Download artifacts** from the build summary above" >> $GITHUB_STEP_SUMMARY
+        echo "2. 🧪 **Test applications** on respective platforms" >> $GITHUB_STEP_SUMMARY
+        echo "3. 🚀 **Create release** from main branch to publish" >> $GITHUB_STEP_SUMMARY
+        echo "4. 📢 **Share with users** for feedback" >> $GITHUB_STEP_SUMMARY

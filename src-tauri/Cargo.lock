@@ -3,6 +3,21 @@
 version = 4
 
 [[package]]
+name = "ImageOverlayTool"
+version = "1.4.7"
+dependencies = [
+ "ab_glyph",
+ "base64 0.21.7",
+ "image",
+ "imageproc",
+ "rusttype",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+]
+
+[[package]]
 name = "ab_glyph"
 version = "0.2.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1487,21 +1502,6 @@ dependencies = [
  "png",
  "qoi",
  "tiff",
-]
-
-[[package]]
-name = "image-overlay"
-version = "1.4.7"
-dependencies = [
- "ab_glyph",
- "base64 0.21.7",
- "image",
- "imageproc",
- "rusttype",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
 ]
 
 [[package]]

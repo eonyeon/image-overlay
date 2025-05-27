@@ -42,38 +42,32 @@
     "bundle": {
       "active": true,
       "category": "Photography",
-      "copyright": "Copyright © 2025 Eric. All rights reserved.",
+      "copyright": "Copyright © 2025 이상언. All rights reserved.",
       "deb": {
         "depends": []
       },
       "externalBin": [],
       "identifier": "com.eric.imageoverlay",
-      "longDescription": "Image overlay tool with perfect Korean text support. Fixed Windows build issues and Mac DMG corruption. Developed by Eric (eon232@gmail.com).",
+      "longDescription": "Image overlay tool with perfect Korean text support. Developed by Eric (eon232@gmail.com).",
       "macOS": {
         "entitlements": null,
         "exceptionDomain": "",
         "frameworks": [],
         "providerShortName": null,
         "signingIdentity": null,
-        "minimumSystemVersion": "10.13",
-        "hardenedRuntime": true,
-        "license": "MIT"
+        "minimumSystemVersion": "10.13"
       },
       "resources": [],
-      "shortDescription": "Image overlay tool with Korean support - Fixed version",
-      "targets": ["dmg", "msi"],
+      "shortDescription": "Image overlay tool with Korean support",
+      "targets": ["app", "dmg", "msi"],
       "windows": {
         "certificateThumbprint": null,
         "digestAlgorithm": "sha256",
-        "timestampUrl": "",
-        "webviewInstallMode": {
-          "type": "embedBootstrapper"
-        },
-        "allowDowngrades": false
+        "timestampUrl": ""
       }
     },
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https: tauri: asset: https://asset.localhost; font-src 'self' data:; img-src 'self' asset: https://asset.localhost blob: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+      "csp": null
     },
     "updater": {
       "active": false
@@ -83,10 +77,8 @@
         "fullscreen": false,
         "height": 700,
         "resizable": true,
-        "title": "Image overlay tool v1.4.7 - Fixed Build (Korean Support)",
-        "width": 800,
-        "minHeight": 500,
-        "minWidth": 600
+        "title": "Image overlay tool - by Eric (v1.4.7)",
+        "width": 800
       }
     ]
   }
