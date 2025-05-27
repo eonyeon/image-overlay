@@ -55,7 +55,9 @@
         "frameworks": [],
         "providerShortName": null,
         "signingIdentity": null,
-        "minimumSystemVersion": "10.13"
+        "minimumSystemVersion": "10.13",
+        "hardenedRuntime": true,
+        "license": "MIT"
       },
       "resources": [],
       "shortDescription": "Image overlay tool with Korean support - Fixed version",
@@ -63,11 +65,15 @@
       "windows": {
         "certificateThumbprint": null,
         "digestAlgorithm": "sha256",
-        "timestampUrl": ""
+        "timestampUrl": "",
+        "webviewInstallMode": {
+          "type": "embedBootstrapper"
+        },
+        "allowDowngrades": false
       }
     },
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src 'self' https: tauri: asset: https://asset.localhost; font-src 'self' data:; img-src 'self' asset: https://asset.localhost blob: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
     },
     "updater": {
       "active": false
@@ -78,7 +84,9 @@
         "height": 700,
         "resizable": true,
         "title": "Image overlay tool v1.4.7 - Fixed Build (Korean Support)",
-        "width": 800
+        "width": 800,
+        "minHeight": 500,
+        "minWidth": 600
       }
     ]
   }
