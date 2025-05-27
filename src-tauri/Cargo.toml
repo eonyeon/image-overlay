@@ -1,0 +1,36 @@
+[package]
+name = "image-overlay"
+version = "1.4.7"
+description = "Image overlay tool with perfect Korean text support - by Eric"
+authors = ["Eric <eon232@gmail.com>"]
+license = ""
+repository = ""
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[dependencies]
+tauri = { version = "1.5", features = [ "protocol-all", "dialog-all", "fs-all", "path-all", "window-all"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+image = "0.24.7"
+imageproc = "0.23.0"
+base64 = "0.21.5"
+rusttype = "0.9.3"
+ab_glyph = "0.2.23"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
+
+# Windows 빌드 최적화
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
