@@ -49,6 +49,13 @@
       "externalBin": [],
       "identifier": "com.eric.imageoverlay",
       "longDescription": "Image overlay tool with perfect Korean text support. Developed by Eric (eon232@gmail.com).",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.png",
+        "icons/icon.ico"
+      ],
       "macOS": {
         "entitlements": null,
         "exceptionDomain": "",
