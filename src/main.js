@@ -615,11 +615,30 @@ class ImageOverlayApp {
     try {
       const imageFiles = await invoke('get_image_files', { folderPath: this.inputPath });
       this.images = imageFiles.map(file => {
-        const fullName = file.split('/').pop() || file.split('\\\\').pop();
+        // 🔧 파일명 표시 문제 해결: 더 확실한 파일명 추출
+        let fullName;
+        
+        // 윈도우 경로 처리 개선
+        if (file.includes('\\')) {
+          // 윈도우 경로 (\\ 사용)
+          const parts = file.split('\\');
+          fullName = parts[parts.length - 1] || 'unknown_file';
+        } else if (file.includes('/')) {
+          // Unix 스타일 경로 (/ 사용)
+          const parts = file.split('/');
+          fullName = parts[parts.length - 1] || 'unknown_file';
+        } else {
+          // 경로 구분자가 없는 경우 (이미 파일명만 있음)
+          fullName = file;
+        }
+        
+        // 확장자 제거
         const nameWithoutExtension = this.removeFileExtension(fullName);
         
         // 🔧 한글 파일명 정규화 (자음/모음 분리 방지)
         const normalizedName = this.normalizeKoreanText(nameWithoutExtension);
+        
+        console.log(`🔧 파일 처리: ${file} -> ${fullName} -> ${nameWithoutExtension} -> ${normalizedName}`);
         
         return {
           path: file,
@@ -1269,18 +1288,21 @@ class ImageOverlayApp {
     };
   }
   
-  // 🔧 텍스트 박스 문제 해결: Rust와 완전히 일치하는 너비 계산
+  // 🔧 플랫폼별 텍스트 너비 계산 (윈도우 호환성 개선)
   estimateTextWidth(text, fontSize) {
     if (!text) return 10; // 최소 너비
     
     let totalWidth = 0;
-    const charCount = text.length;
+    
+    // 🔧 플랫폼 감지 (윈도우에서 더 정확한 텍스트 박스)
+    const isWindows = navigator.platform.toLowerCase().includes('win');
+    const platformFactor = isWindows ? 1.05 : 1.0; // 윈도우에서 5% 더 여유
     
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
       let charWidth;
       
-      // 🔧 Rust와 적확히 동일한 문자 너비 계산
+      // 🔧 Rust와 정확히 동일한 문자 너비 계산 (플랫폼 보정 포함)
       if (char === '1') {
         charWidth = fontSize * 0.2; // 1은 특별히 좁음
       } else if (['i', 'l', '!', '|', 'I', 'j', '.', ','].includes(char)) {
@@ -1325,17 +1347,18 @@ class ImageOverlayApp {
         charWidth = fontSize * 0.45; // 기본값 0.55 -> 0.45
       }
       
-      totalWidth += charWidth;
+      totalWidth += charWidth * platformFactor; // 플랫폼 보정 적용
       
       // 🔧 문자 간 간격 완전 제거 (Rust와 동일)
       // 간격을 추가하지 않음
     }
     
-    // 🔧 여유 공간 약간 추가 (Rust와 동일)
-    const finalWidth = totalWidth * 1.1; // 10% 여유 추가
+    // 🔧 플랫폼별 여유 공간 조정 (윈도우에서 더 안전하게)
+    const marginFactor = isWindows ? 1.15 : 1.1; // 윈도우에서 15% 여유
+    const finalWidth = totalWidth * marginFactor;
     
     // 최소/최대 제한
-    return Math.round(Math.max(10, Math.min(finalWidth, fontSize * text.length * 0.8)));
+    return Math.round(Math.max(10, Math.min(finalWidth, fontSize * text.length * 0.9)));
   }
 
   showProcessingResults(logs) {
