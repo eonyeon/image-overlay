@@ -77,9 +77,7 @@ jobs:
     - name: 🚀 Build Tauri App (Windows) - Fixed
       run: npm run tauri:build
       env:
-        # Windows 빌드 최적화 환경변수
-        RUSTFLAGS: "-C target-feature=+crt-static -C link-arg=/SUBSYSTEM:WINDOWS"
-        # Tauri 환경변수
+        # Tauri 환경변수 (기본 Windows 설정 사용)
         TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
 
     - name: 📊 Windows Build Results

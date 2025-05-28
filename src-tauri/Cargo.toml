@@ -36,6 +36,5 @@ lto = true
 opt-level = "s"
 strip = true
 
-# Windows 빌드 최적화
-[target.x86_64-pc-windows-msvc]
-rustflags = ["-C", "target-feature=+crt-static"]
+# Windows 빌드 최적화 (GitHub Actions에서 환경변수로 처리)
+# [target.x86_64-pc-windows-msvc] 섹션 제거 - GitHub Actions RUSTFLAGS와 충돌 방지
