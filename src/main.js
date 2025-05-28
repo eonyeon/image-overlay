@@ -1,4 +1,5 @@
 import { dialog, invoke } from '@tauri-apps/api';
+import { i18n } from './languages.js';
 
 // 비밀번호 생성 및 검증 클래스
 class PasswordManager {
@@ -58,6 +59,7 @@ class LoginManager {
     this.isLoggedIn = false;
     this.initializeElements();
     this.attachEventListeners();
+    this.setupLanguageSystem(); // 🌐 언어 시스템 설정
     this.checkMonthlyAuth(); // 월별 인증 확인
   }
 
@@ -70,7 +72,186 @@ class LoginManager {
     this.logoutBtn = document.getElementById('logoutBtn');
   }
 
-  // 월별 인증 상태 확인
+  // 🌐 언어 시스템 설정
+  setupLanguageSystem() {
+    // 언어 버튼 이벤트 리스너 추가
+    const langButtons = document.querySelectorAll('.lang-btn, .main-lang-btn');
+    langButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const newLang = e.target.getAttribute('data-lang');
+        this.changeLanguage(newLang);
+      });
+    });
+    
+    // 초기 UI 텍스트 업데이트
+    this.updateUITexts();
+  }
+  
+  // 🌐 언어 변경
+  changeLanguage(langCode) {
+    if (i18n.setLanguage(langCode)) {
+      console.log(`언어 변경: ${langCode}`);
+      this.updateLanguageButtons(langCode);
+      this.updateUITexts();
+      
+      // 성공 메시지
+      this.showSuccessMessage(i18n.getText('notifications.languageChanged'));
+    }
+  }
+  
+  // 🌐 언어 버튼 상태 업데이트
+  updateLanguageButtons(currentLang) {
+    // 로그인 화면 버튼
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
+    });
+    
+    // 메인 화면 버튼
+    document.querySelectorAll('.main-lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
+    });
+  }
+  
+  // 🌐 UI 텍스트 업데이트
+  updateUITexts() {
+    const currentLang = i18n.getCurrentLanguage();
+    this.updateLanguageButtons(currentLang);
+    
+    // 로그인 화면 텍스트
+    this.updateElement('loginTitle', i18n.getText('login.title'));
+    this.updateElement('loginDeveloper', i18n.getText('login.developer'));
+    this.updateElement('loginPasswordLabel', i18n.getText('login.passwordLabel'));
+    this.updateElement('loginBtn', i18n.getText('login.loginButton'));
+    this.updateElement('loginWarning', i18n.getText('login.passwordInfo.warning'));
+    this.updateElement('loginRenewal', i18n.getText('login.passwordInfo.renewal'));
+    
+    // placeholder 업데이트
+    const passwordInput = document.getElementById('passwordInput');
+    if (passwordInput) {
+      passwordInput.placeholder = i18n.getText('login.passwordPlaceholder');
+    }
+    
+    // 메인 화면 텍스트
+    this.updateElement('mainTitle', i18n.getText('main.title'));
+    this.updateElement('mainSubtitle', i18n.getText('main.subtitle'));
+    this.updateElement('userInfoText', i18n.getText('main.userInfo'));
+    this.updateElement('logoutBtn', i18n.getText('main.logoutButton'));
+    
+    // 폴더 선택 텍스트
+    this.updateElement('inputFolderLabel', i18n.getText('main.inputFolder'));
+    this.updateElement('outputFolderLabel', i18n.getText('main.outputFolder'));
+    this.updateElement('inputFolderBtn', i18n.getText('main.selectFolder'));
+    this.updateElement('outputFolderBtn', i18n.getText('main.selectFolder'));
+    
+    // 버튼 텍스트
+    this.updateElement('toggleBatchBtn', i18n.getText('main.batchMode'));
+    this.updateElement('toggleIndividualBtn', i18n.getText('main.individualMode'));
+    this.updateElement('startBtn', i18n.getText('main.startButton'));
+    
+    // 모달 텍스트 업데이트
+    this.updateBatchModalTexts();
+    this.updateIndividualModalTexts();
+    this.updateLogModalTexts();
+    
+    // 기본 폴더 경로 텍스트
+    const inputPath = document.getElementById('inputFolderPath');
+    const outputPath = document.getElementById('outputFolderPath');
+    if (inputPath && inputPath.textContent === '선택된 폴더 없음') {
+      inputPath.textContent = i18n.getText('main.noFolderSelected');
+    }
+    if (outputPath && outputPath.textContent === '선택된 폴더 없음') {
+      outputPath.textContent = i18n.getText('main.noFolderSelected');
+    }
+  }
+  
+  // 🌐 일괄 처리 모달 텍스트 업데이트
+  updateBatchModalTexts() {
+    this.updateElement('batchTitle', i18n.getText('batch.title'));
+    this.updateElement('toggleAutoTextBtn', i18n.getText('batch.autoText'));
+    this.updateElement('toggleCustomTextBtn', i18n.getText('batch.customText'));
+    this.updateElement('customTextLabel', i18n.getText('batch.textInput'));
+    this.updateElement('cancelBatchBtn', i18n.getText('batch.cancel'));
+    this.updateElement('saveBatchBtn', i18n.getText('batch.save'));
+    
+    // placeholder 업데이트
+    const customText = document.getElementById('customText');
+    if (customText) {
+      customText.placeholder = i18n.getText('batch.textPlaceholder');
+    }
+    
+    // 라벨 업데이트 (동적 값 포함)
+    const fontSizeValue = document.getElementById('fontSizeValue');
+    const posXValue = document.getElementById('posXValue');
+    const posYValue = document.getElementById('posYValue');
+    
+    if (fontSizeValue) {
+      const fontSizeLabel = document.getElementById('fontSizeLabel');
+      if (fontSizeLabel) {
+        fontSizeLabel.innerHTML = `${i18n.getText('batch.fontSize')}: <span id="fontSizeValue">${fontSizeValue.textContent}</span>px`;
+      }
+    }
+    
+    if (posXValue) {
+      const posXLabel = document.getElementById('posXLabel');
+      if (posXLabel) {
+        posXLabel.innerHTML = `${i18n.getText('batch.positionRight')}: <span id="posXValue">${posXValue.textContent}</span>%`;
+      }
+    }
+    
+    if (posYValue) {
+      const posYLabel = document.getElementById('posYLabel');
+      if (posYLabel) {
+        posYLabel.innerHTML = `${i18n.getText('batch.positionBottom')}: <span id="posYValue">${posYValue.textContent}</span>%`;
+      }
+    }
+  }
+  
+  // 🌐 개별 처리 모달 텍스트 업데이트
+  updateIndividualModalTexts() {
+    this.updateElement('individualTitle', i18n.getText('individual.title'));
+    this.updateElement('cancelIndividualBtn', i18n.getText('individual.cancel'));
+    this.updateElement('saveIndividualBtn', i18n.getText('individual.save'));
+    
+    // 라벨 업데이트 (동적 값 포함)
+    const indFontSizeValue = document.getElementById('indFontSizeValue');
+    const indPosXValue = document.getElementById('indPosXValue');
+    const indPosYValue = document.getElementById('indPosYValue');
+    
+    if (indFontSizeValue) {
+      const indFontSizeLabel = document.getElementById('indFontSizeLabel');
+      if (indFontSizeLabel) {
+        indFontSizeLabel.innerHTML = `${i18n.getText('individual.fontSize')}: <span id="indFontSizeValue">${indFontSizeValue.textContent}</span>px`;
+      }
+    }
+    
+    if (indPosXValue) {
+      const indPosXLabel = document.getElementById('indPosXLabel');
+      if (indPosXLabel) {
+        indPosXLabel.innerHTML = `${i18n.getText('individual.positionRight')}: <span id="indPosXValue">${indPosXValue.textContent}</span>%`;
+      }
+    }
+    
+    if (indPosYValue) {
+      const indPosYLabel = document.getElementById('indPosYLabel');
+      if (indPosYLabel) {
+        indPosYLabel.innerHTML = `${i18n.getText('individual.positionBottom')}: <span id="indPosYValue">${indPosYValue.textContent}</span>%`;
+      }
+    }
+  }
+  
+  // 🌐 로그 모달 텍스트 업데이트
+  updateLogModalTexts() {
+    this.updateElement('logTitle', i18n.getText('log.title'));
+    this.updateElement('confirmLogBtn', i18n.getText('log.confirm'));
+  }
+  
+  // 🌐 엘리먼트 텍스트 업데이트 도우미 함수
+  updateElement(elementId, text) {
+    const element = document.getElementById(elementId);
+    if (element && text) {
+      element.textContent = text;
+    }
+  }
   checkMonthlyAuth() {
     try {
       const now = new Date();
@@ -83,11 +264,11 @@ class LoginManager {
         // 이번 달 이미 인증됨 - 바로 메인 화면
         this.isLoggedIn = true;
         this.showMainScreen();
-        console.log('이번 달 이미 인증됨 - 자동 로그인');
+        console.log(i18n.getText('notifications.alreadyAuthenticated'));
       } else {
         // 새로운 달이거나 처음 실행 - 로그인 필요
         this.showLoginScreen();
-        console.log('새로운 달 또는 처음 실행 - 로그인 필요');
+        console.log(i18n.getText('notifications.newMonthLogin'));
       }
     } catch (error) {
       console.error('월별 인증 확인 오류:', error);
@@ -112,7 +293,7 @@ class LoginManager {
     const inputPassword = this.passwordInput.value.trim();
     
     if (!inputPassword) {
-      this.showError('비밀번호를 입력해주세요.');
+      this.showError(i18n.getText('notifications.enterPassword'));
       return;
     }
 
@@ -132,9 +313,9 @@ class LoginManager {
       }
       
       this.showMainScreen();
-      this.showSuccessMessage('로그인 성공! 이번 달 동안 재로그인이 필요하지 않습니다.');
+      this.showSuccessMessage(i18n.getText('notifications.loginSuccess'));
     } else {
-      this.showError('잘못된 비밀번호입니다. 비밀번호는 매달 갱신됩니다.');
+      this.showError(i18n.getText('notifications.wrongPassword'));
       this.passwordInput.value = '';
     }
   }
@@ -564,7 +745,7 @@ class ImageOverlayApp {
 
   async selectInputFolder() {
     if (!this.loginManager.checkLoginStatus()) {
-      this.showNotification('로그인이 필요합니다.', 'error');
+      this.showNotification(i18n.getText('notifications.loginRequired'), 'error');
       return;
     }
     
@@ -578,12 +759,12 @@ class ImageOverlayApp {
       if (result) {
         this.inputPath = result;
         this.inputFolderPath.textContent = result;
-        this.showNotification('입력 폴더가 선택되었습니다.', 'success');
+        this.showNotification(i18n.getText('notifications.inputFolderSelected'), 'success');
         await this.loadImages();
       }
     } catch (error) {
       console.error('입력 폴더 선택 오류:', error);
-      this.showNotification('폴더 선택 중 오류가 발생했습니다.', 'error');
+      this.showNotification(i18n.getText('notifications.folderSelectionError'), 'error');
     }
   }
 
@@ -603,11 +784,11 @@ class ImageOverlayApp {
       if (result) {
         this.outputPath = result;
         this.outputFolderPath.textContent = result;
-        this.showNotification('출력 폴더가 선택되었습니다.', 'success');
+        this.showNotification(i18n.getText('notifications.outputFolderSelected'), 'success');
       }
     } catch (error) {
       console.error('출력 폴더 선택 오류:', error);
-      this.showNotification('폴더 선택 중 오류가 발생했습니다.', 'error');
+      this.showNotification(i18n.getText('notifications.folderSelectionError'), 'error');
     }
   }
 
@@ -652,14 +833,14 @@ class ImageOverlayApp {
         };
       });
 
-      console.log(`${this.images.length}개의 이미지가 로드되었습니다:`, this.images);
-      this.showNotification(`${this.images.length}개의 이미지가 로드되었습니다.`, 'success');
+      console.log(`${this.images.length}${i18n.getText('notifications.imagesLoaded')}:`, this.images);
+      this.showNotification(`${this.images.length}${i18n.getText('notifications.imagesLoaded')}`, 'success');
       
       // 썸네일 비동기 로드 시작
       this.loadThumbnails();
     } catch (error) {
       console.error('이미지 로드 오류:', error);
-      this.showNotification('이미지 로드 중 오류가 발생했습니다.', 'error');
+      this.showNotification(i18n.getText('notifications.imageLoadError'), 'error');
       this.images = [];
     }
   }
@@ -685,12 +866,12 @@ class ImageOverlayApp {
     }
     
     if (!this.inputPath || !this.outputPath) {
-      this.showNotification('입력 폴더와 출력 폴더를 선택해주세요.', 'error');
+      this.showNotification(i18n.getText('notifications.selectFolders'), 'error');
       return;
     }
 
     if (this.images.length === 0) {
-      this.showNotification('처리할 이미지가 없습니다.', 'error');
+      this.showNotification(i18n.getText('notifications.noImages'), 'error');
       return;
     }
 
@@ -727,7 +908,7 @@ class ImageOverlayApp {
 
   // 최적화된 썸네일 로딩 (더 작은 청크)
   async loadThumbnails() {
-    console.log('썸네일 로딩 시작...');
+    console.log(i18n.getText('notifications.thumbnailLoading'));
     
     // 더 작은 청크로 나누어 부드러운 로딩 (5개 -> 3개)
     const chunkSize = 3;
@@ -756,7 +937,7 @@ class ImageOverlayApp {
       }
     }
     
-    console.log('모든 썸네일 로딩 완료');
+    console.log(i18n.getText('notifications.thumbnailComplete'));
   }
 
   updateThumbnailInUI(imageIndex) {
@@ -917,7 +1098,7 @@ class ImageOverlayApp {
         imageItem.style.boxShadow = '0 4px 12px rgba(0,123,255,0.3)';
         
         // 미리보기 메시지 표시
-        this.showNotification(`${image.name}의 미리보기를 표시합니다`, 'success');
+        this.showNotification(`${image.name}${i18n.getText('notifications.previewFor')}`, 'success');
       });
       
       // 텍스트 입력 이벤트 (간단한 방식)
@@ -1105,7 +1286,7 @@ class ImageOverlayApp {
     const logs = [];
     
     try {
-      this.showNotification('이미지 처리를 시작합니다...', 'success');
+      this.showNotification(i18n.getText('notifications.processingStart'), 'success');
       
       // 캐시 클리어 (메모리 확보)
       this.clearCache();
@@ -1164,12 +1345,12 @@ class ImageOverlayApp {
     const selectedImages = this.images.filter(img => img.selected);
     
     if (selectedImages.length === 0) {
-      this.showNotification('선택된 이미지가 없습니다.', 'error');
+      this.showNotification(i18n.getText('notifications.noSelectedImages'), 'error');
       return;
     }
     
     try {
-      this.showNotification(`선택된 ${selectedImages.length}개 이미지 처리를 시작합니다...`, 'success');
+      this.showNotification(i18n.getFormattedText('notifications.selectedImagesStart', { count: selectedImages.length }), 'success');
       
       // 캐시 클리어 (메모리 확보)
       this.clearCache();
@@ -1391,11 +1572,11 @@ class ImageOverlayApp {
     
     let message = '';
     if (totalProcessed === 0) {
-      message = '처리된 이미지가 없습니다.';
+      message = i18n.getText('notifications.noProcessedImages');
     } else if (errorCount === 0) {
-      message = `모든 이미지 처리가 완료되었습니다! (처리: ${successCount}개${infoCount > 0 ? `, 건너뛰기: ${infoCount}개` : ''})`;
+      message = `${i18n.getText('notifications.allCompleted')} (${i18n.getText('notifications.processed')}: ${successCount}개${infoCount > 0 ? `, ${i18n.getText('notifications.skipped')}: ${infoCount}개` : ''})`;
     } else {
-      message = `${successCount}/${totalProcessed} 이미지 처리 완료${infoCount > 0 ? ` (건너뛰기: ${infoCount}개)` : ''}`;
+      message = `${successCount}/${totalProcessed}${i18n.getText('notifications.partialCompletion')}${infoCount > 0 ? ` (${i18n.getText('notifications.skipped')}: ${infoCount}개)` : ''}`;
     }
     
     this.showNotification(message, errorCount === 0 ? 'success' : 'error');

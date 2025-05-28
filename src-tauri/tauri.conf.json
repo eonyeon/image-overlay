@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "Image overlay tool",
-    "version": "1.4.7"
+    "version": "1.4.8"
   },
   "tauri": {
     "allowlist": {
@@ -87,7 +87,7 @@
         "fullscreen": false,
         "height": 700,
         "resizable": true,
-        "title": "Image overlay tool - by Eric (v1.4.7)",
+        "title": "Image overlay tool - by Eric (v1.4.8 - Windows Compatible)",
         "width": 800,
         "center": true,
         "decorations": true,

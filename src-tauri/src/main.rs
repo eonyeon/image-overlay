@@ -459,10 +459,10 @@ fn add_text_to_image_simple(
     // 안전한 폰트 크기 설정 (10px ~ 200px)
     let safe_font_size = font_size.max(10.0).min(200.0);
     
-    // 🔧 간소화된 텍스트 크기 추정
-    let estimated_text_width = estimate_text_width_precise(text, safe_font_size);
-    let estimated_text_height = (safe_font_size * 1.2) as u32;
-    let padding = 4; // 고정 패딩
+    // 🔧 플랫폼별 텍스트 크기 추정 (윈도우 호환성 개선)
+    let estimated_text_width = estimate_text_width_simple(text, safe_font_size);
+    let estimated_text_height = safe_font_size as u32; // 더 정확한 높이
+    let padding = if cfg!(target_os = "windows") { 6 } else { 4 }; // 윈도우에서 약간 더 큰 패딩
     
     // 🔧 간단한 위치 사용: JavaScript에서 이미 계산된 절대 좌표 사용
     let safe_x = (position_x as i32).max(padding).min((img_width as i32) - (estimated_text_width as i32) - padding);
@@ -487,9 +487,20 @@ fn render_text_with_font(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    // 개선된 한글 지원 폰트 경로
+    // 🔧 윈도우 호환성 개선된 한글 지원 폰트 경로
     let font_paths = vec![
-        // macOS 한글 폰트 (우선순위 높음)
+        // Windows 한글 폰트 (우선순위 높음 - 윈도우에서 가장 안정적)
+        "C:/Windows/Fonts/malgun.ttf",       // 맑은 고딕 (Windows 7+)
+        "C:/Windows/Fonts/malgunbd.ttf",     // 맑은 고딕 굵게
+        "C:/Windows/Fonts/NanumGothic.ttf",  // 나눔고딕 (설치되어 있는 경우)
+        "C:/Windows/Fonts/batang.ttc",       // 바탕
+        "C:/Windows/Fonts/gulim.ttc",        // 굴림
+        "C:/Windows/Fonts/dotum.ttc",        // 돋움
+        "C:/Windows/Fonts/gungsuh.ttc",      // 궁서
+        "C:/Windows/Fonts/arial.ttf",        // 아리얼 (Unicode 지원)
+        "C:/Windows/Fonts/arialuni.ttf",     // 아리얼 Unicode MS
+        
+        // macOS 한글 폰트 (맥에서 사용)
         "/System/Library/Fonts/Supplemental/AppleSDGothicNeo.ttc",
         "/System/Library/Fonts/AppleSDGothicNeo.ttc",
         "/Library/Fonts/AppleSDGothicNeo.ttc",
@@ -501,18 +512,13 @@ fn render_text_with_font(
         "/System/Library/Fonts/ArialUnicodeMS.ttf",
         "/System/Library/Fonts/PingFang.ttc",
         
-        // Windows 한글 폰트
-        "C:/Windows/Fonts/malgun.ttf",     // 맑은 고딕
-        "C:/Windows/Fonts/batang.ttc",     // 바탕
-        "C:/Windows/Fonts/gulim.ttc",      // 굴림
-        
         // Linux 한글 폰트
         "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
         "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
         "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
         
-        // 기본 폰트들
+        // 기본 폰트들 (폴백)
         "/System/Library/Fonts/Arial.ttf",
         "/Library/Fonts/Arial.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -538,9 +544,20 @@ fn render_text_simple(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    // 개선된 한글 지원 폰트 경로 (대체 함수와 동일)
+    // 🔧 윈도우 호환성 개선된 한글 지원 폰트 경로 (대체 함수와 동일)
     let font_paths = vec![
-        // macOS 한글 폰트 (우선순위 높음)
+        // Windows 한글 폰트 (우선순위 높음 - 윈도우에서 가장 안정적)
+        "C:/Windows/Fonts/malgun.ttf",       // 맑은 고딕 (Windows 7+)
+        "C:/Windows/Fonts/malgunbd.ttf",     // 맑은 고딕 굵게
+        "C:/Windows/Fonts/NanumGothic.ttf",  // 나눔고딕 (설치되어 있는 경우)
+        "C:/Windows/Fonts/batang.ttc",       // 바탕
+        "C:/Windows/Fonts/gulim.ttc",        // 굴림
+        "C:/Windows/Fonts/dotum.ttc",        // 돋움
+        "C:/Windows/Fonts/gungsuh.ttc",      // 궁서
+        "C:/Windows/Fonts/arial.ttf",        // 아리얼 (Unicode 지원)
+        "C:/Windows/Fonts/arialuni.ttf",     // 아리얼 Unicode MS
+        
+        // macOS 한글 폰트 (맥에서 사용)
         "/System/Library/Fonts/Supplemental/AppleSDGothicNeo.ttc",
         "/System/Library/Fonts/AppleSDGothicNeo.ttc",
         "/Library/Fonts/AppleSDGothicNeo.ttc",
@@ -552,18 +569,13 @@ fn render_text_simple(
         "/System/Library/Fonts/ArialUnicodeMS.ttf",
         "/System/Library/Fonts/PingFang.ttc",
         
-        // Windows 한글 폰트
-        "C:/Windows/Fonts/malgun.ttf",     // 맑은 고딕
-        "C:/Windows/Fonts/batang.ttc",     // 바탕
-        "C:/Windows/Fonts/gulim.ttc",      // 굴림
-        
         // Linux 한글 폰트
         "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
         "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
         "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
         
-        // 기본 폰트들
+        // 기본 폰트들 (폴백)
         "/System/Library/Fonts/Arial.ttf",
         "/Library/Fonts/Arial.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -645,9 +657,79 @@ fn render_with_font_simple(
     Ok(())
 }
 
-// 텍스트 너비 추정
+// 텍스트 너비 추정 (기본형)
 fn estimate_text_width(text: &str, font_size: f32) -> u32 {
     (text.chars().count() as f32 * font_size * 0.6) as u32
+}
+
+// 🔧 플랫폼별 텍스트 너비 계산 (윈도우 호환성 개선)
+fn estimate_text_width_simple(text: &str, font_size: f32) -> u32 {
+    if text.is_empty() {
+        return 10; // 최소 너비
+    }
+    
+    let mut total_width = 0.0;
+    
+    // 🔧 윈도우 플랫폼 감지 (텍스트 박스 크기 보정)
+    let platform_factor = if cfg!(target_os = "windows") { 1.05 } else { 1.0 };
+    
+    for ch in text.chars() {
+        // 🔧 JavaScript와 정확히 동일한 문자 너비 계산 (플랫폼 보정 포함)
+        let char_width = match ch {
+            // 매우 좁은 문자들
+            '1' => font_size * 0.2, // 1은 특별히 좁음
+            'i' | 'l' | '!' | '|' | 'I' | 'j' | '.' | ',' => font_size * 0.25, // 조금 증가
+            't' | 'f' | 'r' | '\'' | '"' => font_size * 0.35, // 조금 증가
+            
+            // 넓은 문자들 (더 축소)
+            'W' | 'M' => font_size * 0.7, // 0.8 -> 0.7
+            'w' | 'm' => font_size * 0.65, // 0.75 -> 0.65
+            
+            // 공백 (더 축소)
+            ' ' => font_size * 0.2, // 0.25 -> 0.2
+            
+            // 한글 완성형 (더 보수적 추정)
+            '가'..='힣' => font_size * 0.7, // 0.8 -> 0.7로 더 축소
+            
+            // 한글 자음/모음 (더 축소)
+            'ㄱ'..='ㅎ' => font_size * 0.4, // 0.5 -> 0.4
+            'ㅏ'..='ㅣ' => font_size * 0.3, // 0.4 -> 0.3
+            'ㅤ'..='ㆎ' => font_size * 0.45, // 0.55 -> 0.45
+            
+            // 숫자 (더 보수적)
+            '0' | '8' => font_size * 0.5, // 0.6 -> 0.5
+            '2'..='7' | '9' => font_size * 0.45, // 0.55 -> 0.45
+            
+            // 영문 대문자 (더 축소)
+            'A' | 'H' | 'N' | 'U' | 'V' | 'X' | 'Y' | 'Z' => font_size * 0.55, // 0.65 -> 0.55
+            'Q' | 'G' | 'O' | 'D' => font_size * 0.6, // 0.7 -> 0.6
+            'B' | 'C' | 'E' | 'F' | 'K' | 'L' | 'P' | 'R' | 'S' | 'T' | 'J' => font_size * 0.5, // 0.6 -> 0.5
+            
+            // 영문 소문자 (조정)
+            'a' | 'c' | 'e' | 'g' | 'o' | 'q' | 's' => font_size * 0.5, // 0.4 -> 0.5로 증가
+            'b' | 'd' | 'h' | 'k' | 'n' | 'p' | 'u' | 'v' | 'x' | 'y' | 'z' => font_size * 0.5, // 0.45 -> 0.5로 증가
+            
+            // 특수문자 (더 축소)
+            '-' => font_size * 0.35, // 0.45 -> 0.35 (하이픈은 좁음)
+            '_' | '=' | '+' => font_size * 0.4, // 0.45 -> 0.4
+            '@' | '%' | '#' | '&' => font_size * 0.6, // 0.7 -> 0.6
+            
+            // 기타 문자 (더 보수적)
+            _ => font_size * 0.45, // 0.55 -> 0.45
+        };
+        
+        total_width += char_width * platform_factor; // 플랫폼 보정 적용
+        
+        // 🔧 문자 간 간격 완전 제거 (텍스트 박스 과도한 확장 방지)
+        // 간격을 추가하지 않음
+    }
+    
+    // 🔧 플랫폼별 여유 공간 조정 (윈도우에서 더 안전하게)
+    let margin_factor = if cfg!(target_os = "windows") { 1.15 } else { 1.1 };
+    let final_width = total_width * margin_factor;
+    
+    // 최소/최대 제한
+    final_width.max(10.0).min(font_size * text.chars().count() as f32 * 0.9) as u32
 }
 
 // 🔧 텍스트 박스 크기 문제 완전 해결: 실제 텍스트에 최적화된 너비 계산
