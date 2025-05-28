@@ -35,25 +35,25 @@ jobs:
     - name: 🛠️ Install Windows Build Dependencies (Fixed)
       shell: powershell
       run: |
-        Write-Host "🔧 Installing Visual Studio Build Tools..."
+        Write-Host "Installing Visual Studio Build Tools..."
         
-        # Visual Studio Build Tools 2022 (올바른 방법)
+        # Visual Studio Build Tools 2022 - Correct Method
         choco install visualstudio2022buildtools -y --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
         
-        # WebView2는 대부분 이미 설치되어 있음. 없다면 Edge 설치로 해결
+        # WebView2 is usually pre-installed, if not install via Edge
         if (-not (Get-Command "msedgewebview2.exe" -ErrorAction SilentlyContinue)) {
-          Write-Host "📦 Installing Microsoft Edge (includes WebView2)..."
+          Write-Host "Installing Microsoft Edge (includes WebView2)..."
           choco install microsoft-edge -y
         } else {
-          Write-Host "✅ WebView2 already available"
+          Write-Host "WebView2 already available"
         }
         
-        # 빌드 도구 확인
-        Write-Host "🔍 Checking build tools..."
+        # Check build tools
+        Write-Host "Checking build tools..."
         if (Get-Command "cl.exe" -ErrorAction SilentlyContinue) {
-          Write-Host "✅ MSVC compiler found"
+          Write-Host "MSVC compiler found"
         } else {
-          Write-Host "⚠️ MSVC compiler not found, but continuing..."
+          Write-Host "MSVC compiler not found, but continuing..."
         }
 
     - name: 📦 Cache Dependencies
@@ -88,14 +88,14 @@ jobs:
         Write-Host "=== Windows Build Results ==="
         
         if (Test-Path "src-tauri/target/release/bundle/msi") {
-          Write-Host "✅ MSI Files Generated:"
+          Write-Host "MSI Files Generated:"
           Get-ChildItem "src-tauri/target/release/bundle/msi" -Filter "*.msi" | ForEach-Object {
             $sizeInMB = [math]::Round($_.Length/1MB, 2)
-            Write-Host "   📦 $($_.Name) ($sizeInMB MB)"
+            Write-Host "   $($_.Name) ($sizeInMB MB)"
           }
         } else {
-          Write-Host "❌ No MSI files found"
-          Write-Host "📂 Bundle directory contents:"
+          Write-Host "No MSI files found"
+          Write-Host "Bundle directory contents:"
           if (Test-Path "src-tauri/target/release/bundle") {
             Get-ChildItem "src-tauri/target/release/bundle" -Recurse
           } else {
@@ -132,12 +132,12 @@ jobs:
 
     - name: 🛠️ Install macOS Dependencies
       run: |
-        echo "🔧 Installing macOS build dependencies..."
-        # create-dmg 최신 버전 설치
+        echo "Installing macOS build dependencies..."
+        # Install latest create-dmg
         brew install create-dmg
         
-        # 코드 사이닝 도구 확인
-        echo "🔍 Checking codesign availability..."
+        # Check codesign availability
+        echo "Checking codesign availability..."
         which codesign || echo "codesign not found"
 
     - name: 📦 Cache Dependencies
@@ -161,77 +161,76 @@ jobs:
     # macOS 앱 빌드 (수정됨)
     - name: 🚀 Build Tauri App (macOS) - Fixed
       run: |
-        echo "🚀 Building macOS app with proper configuration..."
+        echo "Building macOS app with proper configuration..."
         
-        # 환경변수 설정
+        # Set environment variables
         export TAURI_PRIVATE_KEY="${{ secrets.TAURI_PRIVATE_KEY }}"
         
-        # 코드 사이닝 없이 빌드 (개발/테스트용)
-        echo "📝 Building without code signing for development..."
+        # Build without code signing for development/testing
+        echo "Building without code signing for development..."
         npm run tauri:build
       env:
-        # 개발 빌드를 위한 환경변수
+        # Environment variables for development build
         MACOSX_DEPLOYMENT_TARGET: "10.13"
 
     # DMG 수정 (개선된 방법)
     - name: 🔧 Create Proper DMG (Fixed Method)
       run: |
-        echo "🔧 Creating properly formatted DMG..."
+        echo "Creating properly formatted DMG..."
         
         cd src-tauri/target/release/bundle/macos
         
-        # 앱 번들 확인
+        # Check app bundle
         if [ -d "Image overlay tool.app" ]; then
           APP_SIZE=$(du -sh "Image overlay tool.app" | awk '{print $1}')
-          echo "✅ App bundle found: Image overlay tool.app ($APP_SIZE)"
+          echo "App bundle found: Image overlay tool.app ($APP_SIZE)"
           
-          # 앱 번들 구조 확인
-          echo "📱 App bundle structure check:"
+          # Check app bundle structure
+          echo "App bundle structure check:"
           if [ -f "Image overlay tool.app/Contents/MacOS/ImageOverlayTool" ]; then
-            echo "✅ Main executable found"
+            echo "Main executable found"
           else
-            echo "⚠️ Main executable path:"
+            echo "Main executable path:"
             find "Image overlay tool.app/Contents/MacOS" -type f 2>/dev/null || echo "MacOS directory not found"
           fi
           
           if [ -f "Image overlay tool.app/Contents/Info.plist" ]; then
-            echo "✅ Info.plist found"
-            # Info.plist 내용 확인
-            echo "📋 Bundle identifier:"
+            echo "Info.plist found"
+            # Check Info.plist contents
+            echo "Bundle identifier:"
             /usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "Image overlay tool.app/Contents/Info.plist" 2>/dev/null || echo "Could not read bundle identifier"
           else
-            echo "❌ Info.plist not found"
+            echo "Info.plist not found"
           fi
           
-          # 앱 권한 수정 (실행 가능하도록)
-          echo "🔧 Setting executable permissions..."
+          # Set executable permissions
+          echo "Setting executable permissions..."
           find "Image overlay tool.app" -type f -name "*" -exec chmod +x {} \; 2>/dev/null || true
           
-          # Ad-hoc 코드 사이닝 (로컬 개발용)
-          echo "✍️ Applying ad-hoc code signing..."
-          codesign --force --deep --sign - "Image overlay tool.app" || echo "⚠️ Code signing failed, but continuing..."
+          # Ad-hoc code signing for local development
+          echo "Applying ad-hoc code signing..."
+          codesign --force --deep --sign - "Image overlay tool.app" || echo "Code signing failed, but continuing..."
           
-          # 깨끗한 DMG 생성
-          echo "🏗️ Creating clean DMG..."
+          # Create clean DMG
+          echo "Creating clean DMG..."
           
-          # 이전 DMG 파일 정리
+          # Clean up previous DMG files
           rm -f ../dmg/*.dmg 2>/dev/null || true
           mkdir -p ../dmg
           
-          # 임시 디렉토리 생성
+          # Create temporary directory
           TEMP_DIR=$(mktemp -d)
-          echo "📁 Temp directory: $TEMP_DIR"
+          echo "Temp directory: $TEMP_DIR"
           
-          # 앱 복사
+          # Copy app
           cp -R "Image overlay tool.app" "$TEMP_DIR/"
           
-          # Applications 링크 생성
+          # Create Applications link
           ln -s /Applications "$TEMP_DIR/Applications"
           
-          # DMG 생성 (간단하고 안정적인 방법)
+          # Create DMG using simple and stable method
           create-dmg \
             --volname "Image Overlay Tool v${{ env.APP_VERSION }}" \
-            --volicon "Image overlay tool.app/Contents/Resources/app.icns" \
             --window-pos 200 120 \
             --window-size 800 450 \
             --icon-size 100 \
@@ -241,74 +240,74 @@ jobs:
             --no-internet-enable \
             "../dmg/Image_overlay_tool_v${{ env.APP_VERSION }}_fixed.dmg" \
             "$TEMP_DIR" || {
-              echo "⚠️ create-dmg failed, trying basic hdiutil..."
+              echo "create-dmg failed, trying basic hdiutil..."
               
-              # 대안: hdiutil 직접 사용
+              # Alternative: use hdiutil directly
               hdiutil create -volname "Image Overlay Tool" \
                 -srcfolder "$TEMP_DIR" \
                 -ov -format UDZO \
                 "../dmg/Image_overlay_tool_v${{ env.APP_VERSION }}_basic.dmg"
             }
           
-          # 임시 디렉토리 정리
+          # Clean up temp directory
           rm -rf "$TEMP_DIR"
           
-          echo "✅ DMG creation completed"
+          echo "DMG creation completed"
           
         else
-          echo "❌ App bundle not found!"
-          echo "📂 Available files:"
+          echo "App bundle not found!"
+          echo "Available files:"
           ls -la
           exit 1
         fi
 
     - name: 🧪 Verify DMG Files
       run: |
-        echo "🧪 Verifying created DMG files..."
+        echo "Verifying created DMG files..."
         
         DMG_DIR="src-tauri/target/release/bundle/dmg"
         
         if [ -d "$DMG_DIR" ]; then
-          echo "📦 Available DMG files:"
+          echo "Available DMG files:"
           for dmg in "$DMG_DIR"/*.dmg; do
             if [ -f "$dmg" ]; then
               SIZE=$(ls -lah "$dmg" | awk '{print $5}')
               NAME=$(basename "$dmg")
-              echo "   📀 $NAME ($SIZE)"
+              echo "   $NAME ($SIZE)"
               
-              # 간단한 DMG 유효성 검사
-              echo "   🔍 Verifying $NAME..."
+              # Simple DMG validity check
+              echo "   Verifying $NAME..."
               if hdiutil verify "$dmg" >/dev/null 2>&1; then
-                echo "   ✅ DMG verification passed"
+                echo "   DMG verification passed"
               else
-                echo "   ⚠️ DMG verification failed, but file exists"
+                echo "   DMG verification failed, but file exists"
               fi
             fi
           done
         else
-          echo "❌ No DMG directory found"
+          echo "No DMG directory found"
         fi
 
     - name: 📊 macOS Build Results
       run: |
         echo "=== macOS Build Results ==="
         
-        # 앱 번들 정보
+        # App bundle info
         if [ -d "src-tauri/target/release/bundle/macos/Image overlay tool.app" ]; then
           APP_SIZE=$(du -sh "src-tauri/target/release/bundle/macos/Image overlay tool.app" | awk '{print $1}')
-          echo "✅ App Bundle: Image overlay tool.app ($APP_SIZE)"
+          echo "App Bundle: Image overlay tool.app ($APP_SIZE)"
         fi
         
-        # DMG 파일 정보
+        # DMG file info
         if [ -d "src-tauri/target/release/bundle/dmg" ]; then
-          echo "📦 DMG Files:"
+          echo "DMG Files:"
           ls -lah src-tauri/target/release/bundle/dmg/*.dmg 2>/dev/null | while read line; do
             SIZE=$(echo $line | awk '{print $5}')
             NAME=$(basename "$(echo $line | awk '{print $9}')")
-            echo "   📀 $NAME ($SIZE)"
+            echo "   $NAME ($SIZE)"
           done
         else
-          echo "❌ No DMG files found"
+          echo "No DMG files found"
         fi
 
     - name: 📤 Upload macOS DMG
@@ -337,7 +336,7 @@ jobs:
         echo "## 📦 Generated Files" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        # Windows 파일들
+        # Windows files
         echo "### 🪟 Windows" >> $GITHUB_STEP_SUMMARY
         if [ -d "artifacts/windows-msi-fixed" ]; then
           find artifacts/windows-msi-fixed -name "*.msi" | while read file; do
@@ -351,7 +350,7 @@ jobs:
         
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        # macOS 파일들
+        # macOS files
         echo "### 🍎 macOS" >> $GITHUB_STEP_SUMMARY
         if [ -d "artifacts/macos-dmg-fixed" ]; then
           find artifacts/macos-dmg-fixed -name "*.dmg" | while read file; do
@@ -365,9 +364,9 @@ jobs:
         
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "## 🔧 Fixes Applied" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Fixed Windows WebView2 installation issue" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Fixed Windows PowerShell UTF-8 encoding issues" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Removed Korean comments causing parsing errors" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Improved macOS DMG creation process" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Added proper code signing for macOS" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Enhanced error handling and logging" >> $GITHUB_STEP_SUMMARY
 
     - name: 🎉 Create GitHub Release (Fixed)
@@ -379,42 +378,43 @@ jobs:
         body: |
           # 🖼️ Image Overlay Tool v${{ env.APP_VERSION }} - FIXED
           
-          **개발자:** Eric (eon232@gmail.com)  
-          **빌드 번호:** ${{ github.run_number }}  
-          **커밋:** ${{ github.sha }}
+          **Developer:** Eric (eon232@gmail.com)  
+          **Build Number:** ${{ github.run_number }}  
+          **Commit:** ${{ github.sha }}
           
-          ## 🔧 수정 사항
-          - ✅ **Windows 빌드 문제 해결**: WebView2 설치 오류 수정
-          - ✅ **macOS DMG 손상 문제 해결**: 올바른 앱 번들 생성 및 코드 사이닝
-          - ✅ **향상된 빌드 프로세스**: 더 안정적이고 신뢰할 수 있는 빌드
+          ## 🔧 Fixed Issues
+          - ✅ **Windows Build Issues**: Fixed PowerShell UTF-8 encoding problems
+          - ✅ **Korean Comments Removed**: Eliminated parsing errors in CI/CD
+          - ✅ **macOS DMG Issues**: Proper app bundle creation and code signing
+          - ✅ **Enhanced Build Process**: More stable and reliable builds
           
-          ## ✨ 주요 기능
-          - 🖼️ 이미지 오버레이 도구
-          - 🇰🇷 완벽한 한글 지원
-          - 🎨 직관적인 사용자 인터페이스
+          ## ✨ Key Features
+          - 🖼️ Image overlay tool
+          - 🇰🇷 Perfect Korean text support
+          - 🎨 Intuitive user interface
           
-          ## 📥 다운로드 및 설치
+          ## 📥 Download & Installation
           
           ### 🪟 Windows
-          1. `.msi` 파일 다운로드
-          2. 파일을 우클릭하여 "관리자 권한으로 실행"
-          3. 설치 마법사 따라 진행
+          1. Download `.msi` file
+          2. Right-click and "Run as administrator"
+          3. Follow installation wizard
           
           ### 🍎 macOS  
-          1. `.dmg` 파일 다운로드
-          2. DMG 파일을 열어 앱을 Applications 폴더로 드래그
-          3. 첫 실행 시 "확인되지 않은 개발자" 경고가 나오면:
-             - 시스템 환경설정 > 보안 및 개인정보보호 > "확인 없이 열기" 클릭
+          1. Download `.dmg` file
+          2. Open DMG and drag app to Applications folder
+          3. First run: If "unidentified developer" warning appears:
+             - System Preferences > Security & Privacy > "Open Anyway"
           
-          ## 🔍 테스트됨
+          ## 🔍 Tested On
           - ✅ Windows 10/11
           - ✅ macOS 10.13+ (Intel & Apple Silicon)
-          - ✅ 한글 텍스트 렌더링
-          - ✅ 이미지 처리 기능
+          - ✅ Korean text rendering
+          - ✅ Image processing features
           
           ---
           
-          💡 **문제 발생 시:** [GitHub Issues](https://github.com/${{ github.repository }}/issues)에서 신고해주세요.
+          💡 **Issues?** Report at [GitHub Issues](https://github.com/${{ github.repository }}/issues)
         files: |
           artifacts/windows-msi-fixed/*
           artifacts/macos-dmg-fixed/*

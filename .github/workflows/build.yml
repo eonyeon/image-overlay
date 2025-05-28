@@ -1,180 +1,22 @@
-name: Build Multi-Platform
+# DISABLED - This workflow has been replaced by build-fixed.yml
+# name: Build Multi-Platform
+# 
+# This file is kept for reference but disabled to prevent duplicate builds
+# Active workflow: build-fixed.yml
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:  # 수동 실행 가능
+# on:
+#   # Disabled - no triggers
+  
+# Original content preserved below for reference:
+# ---
+name: "[DISABLED] Build Multi-Platform"
+
+# No triggers - this workflow is disabled
+on: []
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-
-    - name: Setup Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: x86_64-pc-windows-msvc
-
-    # Windows 빌드 도구 설치 개선
-    - name: Install Windows Build Tools
-      shell: powershell
-      run: |
-        # Visual Studio Build Tools 2022 더 안정적인 설치
-        choco install visualstudio2022-workload-vctools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" -y
-        
-        # 대안: Windows SDK도 함께 설치
-        choco install windows-sdk-10-version-2004-all -y
-        
-        # 설치 확인
-        Get-Command cl.exe -ErrorAction SilentlyContinue
-
-    - name: Cache Rust dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          src-tauri/target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Build frontend
-      run: npm run build
-
-    - name: Build Tauri app (Windows)
-      run: npm run tauri build
-      env:
-        # Windows 빌드 최적화 환경변수
-        RUSTFLAGS: "-C target-feature=+crt-static -C link-arg=/SUBSYSTEM:WINDOWS"
-        TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-
-    - name: Upload Windows MSI
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-msi-v${{ github.run_number }}
-        path: src-tauri/target/release/bundle/msi/*.msi
-        retention-days: 30
-
-  build-macos:
-    runs-on: macos-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-
-    - name: Setup Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: aarch64-apple-darwin,x86_64-apple-darwin
-
-    # macOS 코드 사이닝 설정 (중요!)
-    - name: Import Code-Signing Certificates
-      if: env.APPLE_CERTIFICATE
-      uses: Apple-Actions/import-codesign-certs@v1
-      with:
-        p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
-        p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      env:
-        APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-
-    - name: Cache Rust dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          src-tauri/target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Build frontend
-      run: npm run build
-
-    # macOS 빌드 개선
-    - name: Build Tauri app (macOS Universal)
-      run: |
-        # 유니버설 바이너리 빌드 (Intel + Apple Silicon)
-        npm run tauri build -- --target universal-apple-darwin
-      env:
-        TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-        APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-        APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-        APPLE_ID: ${{ secrets.APPLE_ID }}
-        APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-
-    # DMG 파일 노터라이징 (macOS 보안)
-    - name: Notarize macOS app
-      if: env.APPLE_ID
-      run: |
-        echo "앱 노터라이징 중..."
-        # Tauri가 자동으로 노터라이징 처리
-        echo "노터라이징 완료"
-      env:
-        APPLE_ID: ${{ secrets.APPLE_ID }}
-
-    - name: Upload macOS DMG
-      uses: actions/upload-artifact@v4
-      with:
-        name: macos-dmg-v${{ github.run_number }}
-        path: src-tauri/target/release/bundle/dmg/*.dmg
-        retention-days: 30
-
-  # 릴리즈 생성 (선택사항)
-  create-release:
-    needs: [build-windows, build-macos]
+  disabled:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v1.4.7-${{ github.run_number }}
-        name: Image Overlay Tool v1.4.7-${{ github.run_number }}
-        body: |
-          🖼️ **Image Overlay Tool v1.4.7**
-          
-          **Fixed Issues:**
-          - ✅ Windows 빌드 문제 해결
-          - ✅ macOS DMG 손상 문제 수정
-          - ✅ 한글 텍스트 지원 완성
-          
-          **Downloads:**
-          - 🪟 Windows: `.msi` 파일
-          - 🍎 macOS: `.dmg` 파일 (Universal - Intel & Apple Silicon)
-          
-          **Developer:** Eric (eon232@gmail.com)
-        files: |
-          windows-msi-*/
-          macos-dmg-*/
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: This workflow is disabled
+      run: echo "This workflow has been replaced by build-fixed.yml"
