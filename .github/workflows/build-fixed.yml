@@ -74,49 +74,64 @@ jobs:
     - name: 🎨 Generate Tauri Icons (Fix Windows Build)
       shell: powershell
       run: |
-        Write-Host "Generating Tauri icons to fix Windows build error..."
+        Write-Host "Checking for existing Tauri icons..."
         
-        # Tauri CLI로 기본 아이콘 생성
-        try {
-          npx tauri icon
-          Write-Host "Icons generated successfully"
-        } catch {
-          Write-Host "Tauri icon generation failed, creating basic icons manually..."
+        # 아이콘 파일이 이미 있는지 확인
+        if (Test-Path "src-tauri/icons/icon.png" -and Test-Path "src-tauri/icons/icon.ico") {
+          Write-Host "Icons already exist, skipping generation..."
           
-          # 수동으로 기본 아이콘 디렉토리 및 파일 생성
-          $iconsDir = "src-tauri/icons"
-          if (-not (Test-Path $iconsDir)) {
-            New-Item -ItemType Directory -Path $iconsDir -Force
-          }
-          
-          # PowerShell로 간단한 BMP 아이콘 생성 (임시 해결책)
-          Write-Host "Creating basic icon files..."
-          
-          # 임시 1x1 PNG 데이터 (빌드 에러 방지용)
-          $tempIconData = [Convert]::FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==")
-          
-          # 각 필요한 아이콘 파일 생성
-          [System.IO.File]::WriteAllBytes("$iconsDir/32x32.png", $tempIconData)
-          [System.IO.File]::WriteAllBytes("$iconsDir/128x128.png", $tempIconData)
-          [System.IO.File]::WriteAllBytes("$iconsDir/128x128@2x.png", $tempIconData)
-          [System.IO.File]::WriteAllBytes("$iconsDir/icon.png", $tempIconData)
-          
-          # ICO 파일을 위한 기본 데이터 (Windows 필수)
-          # 간단한 ICO 헤더 + 1x1 이미지
-          $icoData = [Convert]::FromBase64String("AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABILAAASCwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
-          [System.IO.File]::WriteAllBytes("$iconsDir/icon.ico", $icoData)
-          
-          Write-Host "Basic icon files created as temporary fix"
-        }
-        
-        # 아이콘 파일 확인
-        Write-Host "Checking generated icon files..."
-        if (Test-Path "src-tauri/icons") {
-          Get-ChildItem "src-tauri/icons" | ForEach-Object {
-            Write-Host "   $($_.Name) ($([math]::Round($_.Length/1KB, 2)) KB)"
+          # 기존 아이콘 파일 확인
+          Write-Host "Existing icon files:"
+          if (Test-Path "src-tauri/icons") {
+            Get-ChildItem "src-tauri/icons" | ForEach-Object {
+              Write-Host "   $($_.Name) ($([math]::Round($_.Length/1KB, 2)) KB)"
+            }
           }
         } else {
-          Write-Host "Icons directory not found!"
+          Write-Host "Generating Tauri icons to fix Windows build error..."
+          
+          # Tauri CLI로 기본 아이콘 생성
+          try {
+            npx tauri icon
+            Write-Host "Icons generated successfully"
+          } catch {
+            Write-Host "Tauri icon generation failed, creating basic icons manually..."
+            
+            # 수동으로 기본 아이콘 디렉토리 및 파일 생성
+            $iconsDir = "src-tauri/icons"
+            if (-not (Test-Path $iconsDir)) {
+              New-Item -ItemType Directory -Path $iconsDir -Force
+            }
+            
+            # PowerShell로 간단한 BMP 아이콘 생성 (임시 해결책)
+            Write-Host "Creating basic icon files..."
+            
+            # 임시 1x1 PNG 데이터 (빌드 에러 방지용)
+            $tempIconData = [Convert]::FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==")
+            
+            # 각 필요한 아이콘 파일 생성
+            [System.IO.File]::WriteAllBytes("$iconsDir/32x32.png", $tempIconData)
+            [System.IO.File]::WriteAllBytes("$iconsDir/128x128.png", $tempIconData)
+            [System.IO.File]::WriteAllBytes("$iconsDir/128x128@2x.png", $tempIconData)
+            [System.IO.File]::WriteAllBytes("$iconsDir/icon.png", $tempIconData)
+            
+            # ICO 파일을 위한 기본 데이터 (Windows 필수)
+            # 간단한 ICO 헤더 + 1x1 이미지
+            $icoData = [Convert]::FromBase64String("AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABILAAASCwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+            [System.IO.File]::WriteAllBytes("$iconsDir/icon.ico", $icoData)
+            
+            Write-Host "Basic icon files created as temporary fix"
+          }
+          
+          # 아이콘 파일 확인
+          Write-Host "Checking generated icon files..."
+          if (Test-Path "src-tauri/icons") {
+            Get-ChildItem "src-tauri/icons" | ForEach-Object {
+              Write-Host "   $($_.Name) ($([math]::Round($_.Length/1KB, 2)) KB)"
+            }
+          } else {
+            Write-Host "Icons directory not found!"
+          }
         }
 
     - name: 🏗️ Build Frontend
@@ -203,43 +218,58 @@ jobs:
 
     - name: 🎨 Generate Tauri Icons (Fix macOS Build)
       run: |
-        echo "Generating Tauri icons to fix macOS build error..."
+        echo "Checking for existing Tauri icons..."
         
-        # Tauri CLI로 기본 아이콘 생성
-        if npx tauri icon; then
-          echo "Icons generated successfully"
+        # 아이콘 파일이 이미 있는지 확인
+        if [ -f "src-tauri/icons/icon.png" ] && [ -f "src-tauri/icons/icon.ico" ]; then
+          echo "Icons already exist, skipping generation..."
+          
+          # 기존 아이콘 파일 확인
+          echo "Existing icon files:"
+          if [ -d "src-tauri/icons" ]; then
+            ls -la src-tauri/icons/ | while read line; do
+              echo "   $line"
+            done
+          fi
         else
-          echo "Tauri icon generation failed, creating basic icons manually..."
+          echo "Generating Tauri icons to fix macOS build error..."
           
-          # 수동으로 기본 아이콘 디렉토리 및 파일 생성
-          mkdir -p src-tauri/icons
-          
-          # 간단한 1x1 PNG 데이터 (base64)
-          echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" | base64 -d > src-tauri/icons/32x32.png
-          echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" | base64 -d > src-tauri/icons/128x128.png
-          echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" | base64 -d > src-tauri/icons/128x128@2x.png
-          echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" | base64 -d > src-tauri/icons/icon.png
-          
-          # macOS ICNS 파일 생성 (sips 사용)
-          if command -v sips >/dev/null 2>&1; then
-            echo "Creating ICNS file with sips..."
-            sips -s format icns src-tauri/icons/icon.png --out src-tauri/icons/icon.icns 2>/dev/null || echo "ICNS creation failed, but continuing..."
+          # Tauri CLI로 기본 아이콘 생성
+          if npx tauri icon; then
+            echo "Icons generated successfully"
+          else
+            echo "Tauri icon generation failed, creating basic icons manually..."
+            
+            # 수동으로 기본 아이콘 디렉토리 및 파일 생성
+            mkdir -p src-tauri/icons
+            
+            # 간단한 1x1 PNG 데이터 (base64)
+            echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" | base64 -d > src-tauri/icons/32x32.png
+            echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" | base64 -d > src-tauri/icons/128x128.png
+            echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" | base64 -d > src-tauri/icons/128x128@2x.png
+            echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" | base64 -d > src-tauri/icons/icon.png
+            
+            # macOS ICNS 파일 생성 (sips 사용)
+            if command -v sips >/dev/null 2>&1; then
+              echo "Creating ICNS file with sips..."
+              sips -s format icns src-tauri/icons/icon.png --out src-tauri/icons/icon.icns 2>/dev/null || echo "ICNS creation failed, but continuing..."
+            fi
+            
+            # ICO 파일 (간단한 버전)
+            echo "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABILAAASCwAAAAAAAAAAAAA=" | base64 -d > src-tauri/icons/icon.ico
+            
+            echo "Basic icon files created as temporary fix"
           fi
           
-          # ICO 파일 (간단한 버전)
-          echo "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABILAAASCwAAAAAAAAAAAAA=" | base64 -d > src-tauri/icons/icon.ico
-          
-          echo "Basic icon files created as temporary fix"
-        fi
-        
-        # 아이콘 파일 확인
-        echo "Checking generated icon files..."
-        if [ -d "src-tauri/icons" ]; then
-          ls -la src-tauri/icons/ | while read line; do
-            echo "   $line"
-          done
-        else
-          echo "Icons directory not found!"
+          # 아이콘 파일 확인
+          echo "Checking generated icon files..."
+          if [ -d "src-tauri/icons" ]; then
+            ls -la src-tauri/icons/ | while read line; do
+              echo "   $line"
+            done
+          else
+            echo "Icons directory not found!"
+          fi
         fi
 
     - name: 🏗️ Build Frontend
