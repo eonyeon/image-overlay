@@ -77,7 +77,7 @@ jobs:
         Write-Host "Checking for existing Tauri icons..."
         
         # 아이콘 파일이 이미 있는지 확인
-        if (Test-Path "src-tauri/icons/icon.png" -and Test-Path "src-tauri/icons/icon.ico") {
+        if ((Test-Path "src-tauri/icons/icon.png") -and (Test-Path "src-tauri/icons/icon.ico")) {
           Write-Host "Icons already exist, skipping generation..."
           
           # 기존 아이콘 파일 확인
