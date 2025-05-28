@@ -42,8 +42,8 @@ jobs:
         # Visual Studio Build Tools (간단한 방법)
         choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools" -y
         
-        # WebView2 런타임 (Tauri 필수)
-        choco install webview2 -y
+        # WebView2 런타임 (정확한 패키지 이름)
+        choco install microsoft-edge-webview2-runtime -y
 
     - name: 📦 Cache Dependencies
       uses: actions/cache@v3
@@ -219,32 +219,38 @@ jobs:
           hdiutil detach "/Volumes/Image overlay tool" 2>/dev/null || true
           hdiutil detach "/Volumes/Image" 2>/dev/null || true
           
-          # DMG 마운트
+          # DMG 마운트 (개선된 파싱)
           MOUNT_OUTPUT=$(hdiutil attach "$DMG_PATH" 2>&1)
           echo "마운트 출력: $MOUNT_OUTPUT"
           
-          # 마운트 포인트 찾기 (여러 방법 시도)
-          MOUNT_POINT=$(echo "$MOUNT_OUTPUT" | grep "/Volumes" | awk '{print $3}' | head -1)
+          # 마운트 포인트 찾기 (개선된 로직)
+          MOUNT_POINT=$(echo "$MOUNT_OUTPUT" | grep "Apple_HFS" | awk '{print $3}' | head -1)
           
+          # 대안 방법들
           if [ -z "$MOUNT_POINT" ]; then
-            # 대안 방법으로 마운트 포인트 찾기
-            MOUNT_POINT=$(ls /Volumes/ | grep -E "(Image|overlay)" | head -1)
+            # 방법 1: /Volumes 디렉토리 검색
+            MOUNT_POINT=$(ls /Volumes/ | grep -i "image" | head -1)
             if [ -n "$MOUNT_POINT" ]; then
               MOUNT_POINT="/Volumes/$MOUNT_POINT"
             fi
+          fi
+          
+          if [ -z "$MOUNT_POINT" ]; then
+            # 방법 2: hdiutil info로 현재 마운트된 디스크 찾기
+            MOUNT_POINT=$(hdiutil info | grep "/Volumes" | grep -i "image" | awk -F$'\t' '{print $3}' | head -1)
           fi
           
           if [ -n "$MOUNT_POINT" ] && [ -d "$MOUNT_POINT" ]; then
             echo "✅ DMG 마운트 성공: $MOUNT_POINT"
             
             echo "📁 DMG 내용:"
-            ls -la "$MOUNT_POINT/" || echo "내용 읽기 실패"
+            ls -la "$MOUNT_POINT/" 2>/dev/null || echo "내용 읽기 실패"
             
             # 앱 번들 확인 (여러 이름으로 시도)
             APP_FOUND=false
-            for app_name in "Image overlay tool.app" "*.app"; do
-              if [ -d "$MOUNT_POINT/$app_name" ] || ls "$MOUNT_POINT/"$app_name 2>/dev/null; then
-                echo "✅ 앱 번들 발견: $app_name"
+            for app_pattern in "Image overlay tool.app" "*.app"; do
+              if ls "$MOUNT_POINT/"$app_pattern 2>/dev/null; then
+                echo "✅ 앱 번들 발견: $app_pattern"
                 APP_FOUND=true
                 break
               fi
@@ -260,6 +266,8 @@ jobs:
           else
             echo "⚠️ DMG 마운트에 문제가 있지만 파일은 생성됨"
             echo "📝 GitHub Actions 환경 제약으로 인한 것일 수 있음"
+            echo "📁 현재 /Volumes 내용:"
+            ls -la /Volumes/ 2>/dev/null || echo "/Volumes 접근 불가"
           fi
         else
           echo "❌ 고정된 DMG를 찾을 수 없습니다"
@@ -376,5 +384,5 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "1. 📥 **Download artifacts** from the build summary above" >> $GITHUB_STEP_SUMMARY
         echo "2. 🧪 **Test applications** on respective platforms" >> $GITHUB_STEP_SUMMARY
-        echo "3. 🚀 **Create release** from main branch to publish" >> $GITHUB_STEP_SUMMARY
+        echo "3. �🚀 **Create release** from main branch to publish" >> $GITHUB_STEP_SUMMARY
         echo "4. 📢 **Share with users** for feedback" >> $GITHUB_STEP_SUMMARY

@@ -54,7 +54,7 @@
         "exceptionDomain": "",
         "frameworks": [],
         "providerShortName": null,
-        "signingIdentity": null,
+        "signingIdentity": "-",
         "minimumSystemVersion": "10.13"
       },
       "resources": [],
@@ -63,7 +63,10 @@
       "windows": {
         "certificateThumbprint": null,
         "digestAlgorithm": "sha256",
-        "timestampUrl": ""
+        "timestampUrl": "",
+        "webviewInstallMode": {
+          "type": "embedBootstrapper"
+        }
       }
     },
     "security": {
@@ -78,7 +81,11 @@
         "height": 700,
         "resizable": true,
         "title": "Image overlay tool - by Eric (v1.4.7)",
-        "width": 800
+        "width": 800,
+        "center": true,
+        "decorations": true,
+        "alwaysOnTop": false,
+        "skipTaskbar": false
       }
     ]
   }
